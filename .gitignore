@@ -5,3 +5,5 @@
 **/.DS_Store
 **/compiled/
 slideshow2-doc/scribblings/slideshow2/doc/**
+compiled
+**/*.bak

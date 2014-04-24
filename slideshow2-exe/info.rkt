@@ -6,8 +6,8 @@
                "draw-lib"
                "pict-lib"
                "gui-lib"
-               "slideshow-lib"))
-(define implies '("slideshow-lib"))
+               "slideshow2-lib"))
+(define implies '("slideshow2-lib"))
 
 (define pkg-desc "executable for \"slideshow2\"")
 
