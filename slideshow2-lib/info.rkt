@@ -8,3 +8,7 @@
                "gui-lib"))
 
 (define pkg-desc "implementation for \"slideshow2\"")
+
+(define pkg-authors '(leif))
+
+(define version "0.0")
