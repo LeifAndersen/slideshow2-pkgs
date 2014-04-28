@@ -1,3 +1,12 @@
-(module slide2 racket/base
-  (require "core.rkt")
-  (provide (all-from-out "core.rkt")))
+#lang racket/base
+(require racket/unit
+         "core.rkt"
+         "sig.rkt"
+         "param.rkt")
+
+(provide
+ sl render-slide t)
+
+(define-values/invoke-unit ((current-slideshow-linker) core@)
+  (import)
+  (export core^))
