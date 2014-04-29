@@ -68,7 +68,7 @@
                  content))
 
   (struct slide-element (content
-                         next-element
+                         next
                          append-direction
                          in
                          out
@@ -81,7 +81,7 @@
               #:timeout [timeout current-main-slide-timeout]
               #:theme   [theme   current-main-theme]
               . elements)
-   (define elements* (reverse elements))
+    (define elements* (reverse elements))
     (slide title "" 0 #f #f #f elements))
 
   (define (el #:clicks  [clicks  current-main-clicks-to-live]
@@ -90,7 +90,26 @@
               #:out     [out     current-main-slide-out-animation]
               #:append  [append  current-main-append-direction]
               content)
-    (slide-element content null append in out timeout clicks))
+    #f)
+
+  (define (element-cons first second)
+    (cond
+     [(not (null? (slide-element-next first)))
+      (error (format "Slide ~a already a list") first)]
+     [else
+      (slide-element (slide-element-content first)
+                     second
+                     (slide-element-append-direction first)
+                     (slide-element-in first)
+                     (slide-element-out first)
+                     (slide-element-timeout first)
+                     (slide-element-clicks-to-live first))]))
+
+  (define (element-car elements)
+    elements)
+
+  (define (element-cdr elements)
+    (slide-element-next elements))
 
   (define (render-slide slide)
     #f)
