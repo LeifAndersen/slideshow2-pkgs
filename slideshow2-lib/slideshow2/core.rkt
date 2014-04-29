@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/unit
          racket/draw
+         racket/match
          texpict/mrpict
          texpict/utils
          "sig.rkt")
@@ -55,8 +56,11 @@
   (define main-element-timeout #f)
   (define current-main-element-timeout (make-parameter main-slide-timeout))
 
-  (define main-append-direction #f)
-  (define current-main-append-direction (make-parameter current-main-append-direction))
+  (define main-append-direction 'up)
+  (define current-main-append-direction (make-parameter main-append-direction))
+
+  (define main-append-distance 25)
+  (define current-main-append-distance (make-parameter main-append-distance))
 
   (struct slide (title            ; string?
                  comment          ; string?
@@ -66,32 +70,36 @@
                  timeout          ; integer?
                  theme            ; theme?
                  content          ; (list-of slide-element?)
-                 future-content)) ; (list-of slide-element?)
+                 future-content)  ; (list-of slide-element?)
+          #:transparent) ; TODO remove, it's for printing
 
   (struct slide-element (content           ; pict?
                          append-direction  ; symbol?
+                         append-distance   ; number?
                          in                ; (or animation? #f)
                          out               ; (or animation? #f)
                          timeout           ; (or integer? #f)
-                         clicks-to-live))  ; (or integer? #f)
+                         clicks-to-live)   ; (or integer? #f)
+          #:transparent) ; TODO remove, it's for printing
 
   (struct animation? ())
 
-  (define (sl #:title   [title   current-main-title]
-              #:in      [in      current-main-slide-in-animation]
-              #:out     [out     current-main-slide-out-animation]
-              #:timeout [timeout current-main-slide-timeout]
-              #:theme   [theme   current-main-theme]
+  (define (sl #:title   [title   (current-main-title)]
+              #:in      [in      (current-main-slide-in-animation)]
+              #:out     [out     (current-main-slide-out-animation)]
+              #:timeout [timeout (current-main-slide-timeout)]
+              #:theme   [theme   (current-main-theme)]
               . elements)
     (slide title "" 0 #f #f #f elements))
 
-  (define (el #:clicks  [clicks  current-main-clicks-to-live]
-              #:timeout [timeout current-main-element-timeout]
-              #:in      [in      current-main-element-in-animation]
-              #:out     [out     current-main-slide-out-animation]
-              #:append  [append  current-main-append-direction]
+  (define (el #:clicks   [clicks   (current-main-clicks-to-live)]
+              #:timeout  [timeout  (current-main-element-timeout)]
+              #:in       [in       (current-main-element-in-animation)]
+              #:out      [out      (current-main-slide-out-animation)]
+              #:append   [append   (current-main-append-direction)]
+              #:distance [distance (current-main-append-distance)]
               content)
-    #f)
+    (slide-element content append distance in out timeout clicks))
 
   ; render-slide : slide? -> void?
   (define (render-slide slide)
@@ -139,8 +147,34 @@
                    future-content))]))
 
   ; el->pict : (Listof slideshow-element?) -> pict?
-  (define (el->pict slide)
-    #f)
+  (define (el->pict content)
+    (match content
+      ['() (t "")] ; TODO how do you make a blank picture?
+      [`(,picture) (slide-element-content picture)]
+      [`(,picture1 ,picture2 ,rest ...)
+       (define new-pict
+         (match (slide-element-append-direction picture2)
+           ['left
+            (hc-append (slide-element-append-distance picture2)
+                       (slide-element-content picture2)
+                       (slide-element-content picture1))]
+           ['right
+            (hc-append (slide-element-append-distance picture2)
+                       (slide-element-content picture1)
+                       (slide-element-content picture2))]
+           ['up
+            (vc-append (slide-element-append-distance picture2)
+                       (slide-element-content picture2)
+                       (slide-element-content picture1))]
+           ['down
+            (vc-append (slide-element-append-distance picture2)
+                       (slide-element-content picture1)
+                       (slide-element-content picture2))]
+           [else
+            (error "el->pict : invalid match direction")]))
+       (el->pict `(,(slide-element new-pict 'trash 'trash 'trash 'trash 'trash 'trash)
+                   ,@rest))]
+      [else (error "el->pict : should not be here")]))
 
   (define (t s) (text s (current-main-font) (current-font-size)))
   (define (it s) (text s `(italic . ,(current-main-font)) (current-font-size)))
