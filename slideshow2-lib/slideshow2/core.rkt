@@ -47,6 +47,9 @@
   (define main-title "")
   (define current-main-title (make-parameter main-title))
 
+  (define main-comment "")
+  (define current-main-comment (make-parameter main-comment))
+
   (define main-clicks-to-live #f)
   (define current-main-clicks-to-live (make-parameter main-clicks-to-live))
 
@@ -56,7 +59,7 @@
   (define main-element-timeout #f)
   (define current-main-element-timeout (make-parameter main-slide-timeout))
 
-  (define main-append-direction 'up)
+  (define main-append-direction 'down)
   (define current-main-append-direction (make-parameter main-append-direction))
 
   (define main-append-distance 25)
@@ -85,12 +88,18 @@
   (struct animation? ())
 
   (define (sl #:title   [title   (current-main-title)]
+              #:comment [comment (current-main-comment)]
               #:in      [in      (current-main-slide-in-animation)]
               #:out     [out     (current-main-slide-out-animation)]
               #:timeout [timeout (current-main-slide-timeout)]
               #:theme   [theme   (current-main-theme)]
               . elements)
-    (slide title "" 0 #f #f #f elements))
+    (cond
+        [(null? elements)
+         (slide title comment 0 in out timeout theme '() '())]
+        [else
+         (slide title comment 0 in out timeout theme
+                (list (car elements)) (build-elements (cdr elements)))]))
 
   (define (el #:clicks   [clicks   (current-main-clicks-to-live)]
               #:timeout  [timeout  (current-main-element-timeout)]
@@ -101,9 +110,27 @@
               content)
     (slide-element content append distance in out timeout clicks))
 
-  ; render-slide : slide? -> void?
-  (define (render-slide slide)
-    #f)
+  ; build-elements : (Listof (or slide-element? symbol?)) -> (Listof slide-element?)
+  (define (build-elements elements)
+    (match elements
+      ['() '()]
+      [`(,(and (? slide-element?) first) ,rest ...)
+       `(,first ,@(build-elements rest))]
+      [`(,(and (? symbol?) direction) ,(and (? slide-element?) first) ,rest ...)
+       `(,(slide-element (slide-element-content first)
+                         direction
+                         (slide-element-append-distance first)
+                         (slide-element-in first)
+                         (slide-element-out first)
+                         (slide-element-timeout first)
+                         (slide-element-clicks-to-live first))
+         ,@(build-elements rest))]
+      [else
+       (error "build-elements : shouldn't be here")]))
+
+  ; render-slide : slide? -> pict?
+  (define (render-slide current-slide)
+    (el->pict (slide-content current-slide)))
 
   ; click : (Listof slide?) -> (Listof?)
   (define (click slide-deck)
@@ -127,12 +154,12 @@
                  (not (equal? (slide-element-clicks-to-live element) 0)))
               elements))
     (cond
-     [(null? (slide-future-content slide))
+     [(null? (slide-future-content current-slide))
       (cdr slide-deck)]
      [else
       (define content
         (append (remove-dead-elements (reduce-number (slide-content current-slide)))
-                (car (slide-future-content current-slide))))
+                (list (car (slide-future-content current-slide)))))
       (define future-content
         (cdr (slide-future-content current-slide)))
 
@@ -144,7 +171,8 @@
                    (slide-title current-slide)
                    (slide-theme current-slide)
                    content
-                   future-content))]))
+                   future-content)
+            (cdr slide-deck))]))
 
   ; el->pict : (Listof slideshow-element?) -> pict?
   (define (el->pict content)
