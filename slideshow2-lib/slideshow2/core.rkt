@@ -58,22 +58,24 @@
   (define main-append-direction #f)
   (define current-main-append-direction (make-parameter current-main-append-direction))
 
-  (struct slide (title
-                 comment
-                 page
-                 in
-                 out
-                 timeout
-                 theme
-                 content))
+  (struct slide (title            ; string?
+                 comment          ; string?
+                 page             ; number?
+                 in               ; (or animation? #f)
+                 out              ; (or animation? #f)
+                 timeout          ; integer?
+                 theme            ; theme?
+                 content          ; (list-of slide-element?)
+                 future-content)) ; (list-of slide-element?)
 
-  (struct slide-element (content
-                         next
-                         append-direction
-                         in
-                         out
-                         timeout
-                         clicks-to-live))
+  (struct slide-element (content           ; pict?
+                         append-direction  ; symbol?
+                         in                ; (or animation? #f)
+                         out               ; (or animation? #f)
+                         timeout           ; (or integer? #f)
+                         clicks-to-live))  ; (or integer? #f)
+
+  (struct animation? ())
 
   (define (sl #:title   [title   current-main-title]
               #:in      [in      current-main-slide-in-animation]
@@ -81,7 +83,6 @@
               #:timeout [timeout current-main-slide-timeout]
               #:theme   [theme   current-main-theme]
               . elements)
-    (define elements* (reverse elements))
     (slide title "" 0 #f #f #f elements))
 
   (define (el #:clicks  [clicks  current-main-clicks-to-live]
@@ -92,29 +93,52 @@
               content)
     #f)
 
-  (define (element-cons first second)
-    (cond
-     [(not (null? (slide-element-next first)))
-      (error (format "Slide ~a already a list") first)]
-     [else
-      (slide-element (slide-element-content first)
-                     second
-                     (slide-element-append-direction first)
-                     (slide-element-in first)
-                     (slide-element-out first)
-                     (slide-element-timeout first)
-                     (slide-element-clicks-to-live first))]))
-
-  (define (element-car elements)
-    elements)
-
-  (define (element-cdr elements)
-    (slide-element-next elements))
-
+  ; render-slide : slide? -> void?
   (define (render-slide slide)
     #f)
-  (define (click slide)
-    #f)
+
+  ; click : (Listof slide?) -> (Listof?)
+  (define (click slide-deck)
+    (define current-slide (car slide-deck))
+
+    ; reduce-numbers : (Listof slide-element?) -> (Listof slide-element?)
+    (define (reduce-number elements)
+      (for/list ([element elements])
+        (if (slide-element-clicks-to-live element)
+            (slide-element (slide-element-content element)
+                           (slide-element-append-direction element)
+                           (slide-element-in element)
+                           (slide-element-out element)
+                           (slide-element-timeout element)
+                           (- (slide-element-clicks-to-live element) 1))
+            element)))
+
+    ; remove-dead-elements : (Listof slide-element?) -> (Listof slide-element?)
+    (define (remove-dead-elements elements)
+      (filter (λ (element)
+                 (not (equal? (slide-element-clicks-to-live element) 0)))
+              elements))
+    (cond
+     [(null? (slide-future-content slide))
+      (cdr slide-deck)]
+     [else
+      (define content
+        (append (remove-dead-elements (reduce-number (slide-content current-slide)))
+                (car (slide-future-content current-slide))))
+      (define future-content
+        (cdr (slide-future-content current-slide)))
+
+      (cons (slide (slide-title current-slide)
+                   (slide-comment current-slide)
+                   (slide-page current-slide)
+                   (slide-in current-slide)
+                   (slide-out current-slide)
+                   (slide-title current-slide)
+                   (slide-theme current-slide)
+                   content
+                   future-content))]))
+
+  ; el->pict : (Listof slideshow-element?) -> pict?
   (define (el->pict slide)
     #f)
 
