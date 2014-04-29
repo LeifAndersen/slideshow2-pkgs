@@ -4,7 +4,8 @@
 
 (define-signature config^
   (printing?
-   base-font-size))
+   base-font-size
+   screen-w screen-h))
 
 (define-signature viewer^
   ())
@@ -16,4 +17,4 @@
    el->pict))
 
 (define-signature cmdline^ extends config^
-  ())
+  (file-to-load))
