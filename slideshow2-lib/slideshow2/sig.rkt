@@ -10,7 +10,10 @@
   ())
 
 (define-signature core^
-  (t sl render-slide))
+  (t it bt bit tt rt
+   sl el click
+   render-slide
+   el->pict))
 
 (define-signature cmdline^ extends config^
   ())

@@ -6,7 +6,10 @@
          "param.rkt")
 
 (provide
- sl render-slide t
+ t it bt bit tt rt
+ sl el click
+ render-slide
+ el->pict
  (all-from-out texpict/utils))
 
 (define-values/invoke-unit ((current-slideshow-linker) core@)
