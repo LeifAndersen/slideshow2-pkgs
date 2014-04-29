@@ -1,0 +1,10 @@
+slideshow2-pkgs
+===============
+
+This is a repository for slideshow2-pkgs.
+
+The goal is to rebuild slideshow in a more functional style.
+
+Currently this repository is in an unusable state.
+
+You can find my other work on slideshow in the slideshow-pretty package, found at: https://github.com/LeifAndersen/slideshow-pretty
